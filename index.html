@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width">
+
+    <title>Current Weather</title>
+	<style>
+	body{
+		  margin: 0;
+          padding: 0;
+          width: 100%;
+		  height: 100vh;
+		  font-family:Arial, Helvetica, sans-serif;
+		}
+		.container{
+		    width: 100%;
+			height:100%;
+			display: flex;
+   			text-align: center;
+			background-color:yellow;
+		}
+		.center{
+		margin:auto;
+		align-self: center;
+		}
+		.hide{
+		display:none;
+		}
+		.show{
+		display:block;
+		}
+	</style>
+  </head>
+
+  <body>
+	<div class="container">
+    <div class="center">
+				<div class="show" id="loader"><img src="loader.gif" width="100" height="100"/></div>
+				<div class="hide" id="content">
+					<h1>Current Weather:</h1>
+					<h3 id="city"></h3>
+					<h2 class="temp"><span id="temp"></span>&deg;F</h2>
+					<img src="" id="weather_icon" width="75" height="75" />
+					<h2 class="desc" id="desc"></h2>
+				</div>
+		</div>
+    </div>
+  </body>
+  <script>
+(function(){ 
+ 
+	var weatherAPI = 'https://weathersync.herokuapp.com';
+	var weatherIconUrl = 'http://openweathermap.org/img/w/';
+	var lat, lng, temp, weather_desc, weather_icon, loader, content
+	// define $ as document element
+	,el = function(el){return document.getElementById(el);};
+	
+	
+	
+fetch(`${weatherAPI}/ip`)
+	.then(handleErrors)
+    .then(function(response) { return response.json(); })
+	.then(function({ city, country, location }) {
+		
+	  // define lang and lng
+	  lat = location.latitude;
+	  lng = location.longitude;
+	  
+	  // send city and country code to page
+	  sendToPage("city", city+', '+country.code);
+	  
+	  // fetch again to get the weather info.
+	  fetch(`${weatherAPI}/weather/${lat},${lng}`)
+	  		.then(handleErrors) // handle error if any
+			.then(function(response) { return response.json(); }) // get response
+			.then( weather_data => {
+				tempInF = tempkToF(weather_data.main.temp);
+				weather_desc = weather_data.weather[0].description;
+				weather_icon = weather_data.weather[0].icon;
+				
+				// send temp, desc, weather icon to page
+				sendToPage("temp", tempInF);
+				sendToPage("desc", weather_desc);
+				sendImage("weather_icon",`${weatherIconUrl}${weather_icon}.png`);
+				
+				// show content and hide spinner
+				hide("loader");
+				show("content");
+			})
+		
+	});
+	
+	// function to convert temperature to F
+	function tempkToF(tempK){
+		return Math.round(tempK * (9/5) - 459.67);
+	}
+	
+	// handle error response
+	function handleErrors(response) {
+    if (!response.ok) {
+        throw Error(response.statusText);
+    }
+    	return response;
+    }
+	
+	// show element function
+	function show(id){
+		el(id).setAttribute("class", ['show']);
+	}
+	// hide element function
+	function hide(id){
+		el(id).setAttribute("class", ['hide']);
+	}
+	
+	// send ele to page
+	function sendToPage(id, txt){
+		el(id).innerHTML = txt;
+	}
+	
+	// send img to page
+	function sendImage(id, imageSrc){
+		el(id).src = imageSrc;
+	}
+})();
+  </script>
+</html>
